@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>LeRoleplay - Chargement</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link href="https://fonts.googleapis.com/css?family=Roboto:400,500,700,900&display=swap" rel="stylesheet">
+<style>
+    /* Écrit en CSS/JS "à l'ancienne" (préfixes -webkit-, pas de variables CSS,
+       pas de fonctions fléchées) : le navigateur intégré à GMod peut être vieux. */
+    html, body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #0a0c10;
+        font-family: "Roboto", "Segoe UI", Arial, sans-serif;
+        color: #f2f2f5;
+        -webkit-user-select: none;
+        user-select: none;
+    }
+
+    /* ---------- Fonds (diaporama) ---------- */
+    .bg {
+        position: absolute;
+        top: -3%; left: -3%;
+        width: 106%; height: 106%;
+        background-size: cover;
+        background-position: center;
+        opacity: 0;
+        -webkit-transition: opacity 1.6s ease;
+        transition: opacity 1.6s ease;
+        -webkit-animation: drift 24s ease-in-out infinite alternate;
+        animation: drift 24s ease-in-out infinite alternate;
+    }
+    .bg.show { opacity: 1; }
+
+    @-webkit-keyframes drift {
+        from { -webkit-transform: scale(1) translate(0, 0); }
+        to   { -webkit-transform: scale(1.06) translate(-1.2%, -0.8%); }
+    }
+    @keyframes drift {
+        from { transform: scale(1) translate(0, 0); }
+        to   { transform: scale(1.06) translate(-1.2%, -0.8%); }
+    }
+
+    /* Assombrit le haut et le bas pour lire le texte */
+    .shade {
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: -webkit-linear-gradient(top, rgba(10,12,16,0.75) 0%, rgba(10,12,16,0) 22%, rgba(10,12,16,0) 55%, rgba(10,12,16,0.92) 100%);
+        background: linear-gradient(to bottom, rgba(10,12,16,0.75) 0%, rgba(10,12,16,0) 22%, rgba(10,12,16,0) 55%, rgba(10,12,16,0.92) 100%);
+    }
+
+    /* ---------- Astuces (en haut, façon Fortnite) ---------- */
+    .tip {
+        position: absolute;
+        top: 4.2vh;
+        left: 50%;
+        -webkit-transform: translateX(-50%);
+        transform: translateX(-50%);
+        max-width: 70vw;
+        padding: 1.1vh 2.2vh 1.1vh 1.1vh;
+        background: rgba(28,31,38,0.88);
+        border-radius: 1.4vh;
+        white-space: nowrap;
+        font-size: 0;
+    }
+    .tip-label, .tip-text { display: inline-block; vertical-align: middle; }
+    .tip-label {
+        padding: 0.7vh 1.4vh;
+        margin-right: 1.6vh;
+        background: #58a0e8;
+        border-radius: 0.9vh;
+        font-size: 1.5vh;
+        font-weight: 900;
+        letter-spacing: 0.15vh;
+    }
+    .tip-text {
+        font-size: 2.1vh;
+        font-weight: 500;
+        -webkit-transition: opacity 0.45s ease;
+        transition: opacity 0.45s ease;
+    }
+    .tip-text.hide { opacity: 0; }
+
+    /* ---------- Bas : nom du serveur + chargement ---------- */
+    .bottom {
+        position: absolute;
+        left: 4.5vw;
+        right: 4.5vw;
+        bottom: 5.5vh;
+    }
+
+    .brand {
+        font-size: 7vh;
+        font-weight: 900;
+        letter-spacing: -0.15vh;
+        line-height: 1;
+        text-shadow: 0 0.4vh 2vh rgba(0,0,0,0.55);
+    }
+    .brand span { color: #58a0e8; }
+
+    .server {
+        margin-top: 1vh;
+        font-size: 2vh;
+        font-weight: 500;
+        color: #cdd0d7;
+        text-shadow: 0 0.2vh 1vh rgba(0,0,0,0.6);
+    }
+
+    .loader {
+        margin-top: 3vh;
+        padding: 2vh 2.4vh;
+        background: rgba(28,31,38,0.9);
+        border-radius: 1.4vh;
+    }
+    .loader-top { position: relative; height: 2.6vh; }
+    .status {
+        position: absolute;
+        left: 0; right: 9vh;
+        font-size: 1.9vh;
+        font-weight: 500;
+        color: #cdd0d7;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .percent {
+        position: absolute;
+        right: 0;
+        font-size: 2.1vh;
+        font-weight: 900;
+    }
+
+    .bar {
+        margin-top: 1.2vh;
+        height: 1.1vh;
+        background: #343942;
+        border-radius: 0.6vh;
+        overflow: hidden;
+    }
+    .bar-fill {
+        width: 0%;
+        height: 100%;
+        background: #58a0e8;
+        border-radius: 0.6vh;
+    }
+</style>
+</head>
+<body>
+    <div id="bgs"></div>
+    <div class="shade"></div>
+
+    <div class="tip">
+        <span class="tip-label">ASTUCE</span><span class="tip-text" id="tip"></span>
+    </div>
+
+    <div class="bottom">
+        <div class="brand">Le<span>Roleplay</span></div>
+        <div class="server" id="server">Connexion au serveur...</div>
+
+        <div class="loader">
+            <div class="loader-top">
+                <div class="status" id="status">Connexion au serveur...</div>
+                <div class="percent" id="percent">0%</div>
+            </div>
+            <div class="bar"><div class="bar-fill" id="fill"></div></div>
+        </div>
+    </div>
+
+<script>
+/* ============================================================
+   À MODIFIER FACILEMENT
+   ============================================================ */
+
+// Images de fond (dans le dossier img/). Ajoute tes captures ici.
+var BACKGROUNDS = [
+    "img/bg1.jpg",
+    "img/bg2.jpg"
+];
+
+// Astuces affichées en haut
+var TIPS = [
+    "Plus de 50 voitures t'attendent à la concession.",
+    "Ton nom RP est définitif : seule la mairie peut le changer.",
+    "Appuie sur Q pour ouvrir ton menu : armes, objets, meubles...",
+    "Tes armes rangées dans ton inventaire restent sauvegardées, même après une déconnexion.",
+    "19 métiers à découvrir : policier, pompier, médecin, taxi, banquier...",
+    "Le sprint te fatigue : surveille l'anneau bleu en bas à droite.",
+    "Surveille ta jauge d'essence : une voiture à sec ne repart pas.",
+    "Respecte le roleplay : pas de freekill, pas de no-RP.",
+    "Un problème ? Contacte un membre du staff en jeu ou sur le Discord."
+];
+
+var BG_DURATION = 9000;   // ms par image de fond
+var TIP_DURATION = 6500;  // ms par astuce
+
+/* ============================================================ */
+
+function $(id) { return document.getElementById(id); }
+
+// --- Diaporama de fond ---
+var bgEls = [];
+var bgIndex = 0;
+
+(function () {
+    var holder = $("bgs");
+    for (var i = 0; i < BACKGROUNDS.length; i++) {
+        var el = document.createElement("div");
+        el.className = "bg" + (i === 0 ? " show" : "");
+        el.style.backgroundImage = "url('" + BACKGROUNDS[i] + "')";
+        holder.appendChild(el);
+        bgEls.push(el);
+    }
+
+    if (bgEls.length > 1) {
+        setInterval(function () {
+            bgEls[bgIndex].className = "bg";
+            bgIndex = (bgIndex + 1) % bgEls.length;
+            bgEls[bgIndex].className = "bg show";
+        }, BG_DURATION);
+    }
+})();
+
+// --- Astuces (ordre aléatoire, sans répéter la même deux fois de suite) ---
+var tipIndex = Math.floor(Math.random() * TIPS.length);
+$("tip").innerHTML = TIPS[tipIndex];
+
+setInterval(function () {
+    var el = $("tip");
+    el.className = "tip-text hide";
+
+    setTimeout(function () {
+        var next = tipIndex;
+        while (TIPS.length > 1 && next === tipIndex) {
+            next = Math.floor(Math.random() * TIPS.length);
+        }
+        tipIndex = next;
+        el.innerHTML = TIPS[tipIndex];
+        el.className = "tip-text";
+    }, 450);
+}, TIP_DURATION);
+
+/* ============================================================
+   Progression : GMod appelle les fonctions ci-dessous pendant
+   le chargement. On combine les fichiers téléchargés et l'étape
+   en cours, et la barre ne recule jamais.
+   ============================================================ */
+var filesTotal = 0;
+var filesNeeded = 0;
+var stageProgress = 0;
+var shown = 0;
+
+// Étapes connues du chargement GMod -> progression approximative
+var STAGES = [
+    { match: /retrieving server info/i,   value: 0.05, text: "Connexion au serveur..." },
+    { match: /sending client info/i,      value: 0.10, text: "Envoi de tes infos..." },
+    { match: /workshop/i,                 value: 0.20, text: "Téléchargement des addons Workshop..." },
+    { match: /mounting addons/i,          value: 0.55, text: "Installation des addons..." },
+    { match: /requesting resources/i,     value: 0.62, text: "Récupération des fichiers du serveur..." },
+    { match: /received all lua/i,         value: 0.72, text: "Scripts reçus..." },
+    { match: /starting lua/i,             value: 0.80, text: "Démarrage des scripts..." },
+    { match: /lua/i,                      value: 0.78, text: "Chargement des scripts..." },
+    { match: /client info sent/i,         value: 0.86, text: "Presque prêt..." },
+    { match: /loading|precach/i,          value: 0.92, text: "Chargement de la ville..." },
+    { match: /spawn/i,                    value: 0.96, text: "Arrivée en ville..." }
+];
+
+function setStatus(text) { $("status").innerHTML = text; }
+
+function targetProgress() {
+    var files = filesTotal > 0 ? (filesTotal - filesNeeded) / filesTotal : 0;
+    // Les téléchargements comptent pour la partie 20% -> 55%
+    var fromFiles = filesTotal > 0 ? 0.2 + files * 0.35 : 0;
+    return Math.min(0.99, Math.max(stageProgress, fromFiles));
+}
+
+setInterval(function () {
+    var target = targetProgress();
+    if (target > shown) {
+        shown += Math.max((target - shown) * 0.08, 0.0008);
+        if (shown > target) shown = target;
+    }
+
+    var pct = Math.floor(shown * 100);
+    $("fill").style.width = pct + "%";
+    $("percent").innerHTML = pct + "%";
+}, 30);
+
+// Appelée au début : infos du serveur
+function GameDetails(servername, serverurl, mapname, maxplayers, steamid, gamemode, volume, language) {
+    var name = servername || "LeRoleplay";
+    var details = name;
+    if (mapname) details += "  •  " + mapname;
+    if (maxplayers) details += "  •  " + maxplayers + " places";
+    $("server").innerHTML = details;
+}
+
+function SetFilesTotal(total) {
+    filesTotal = total;
+}
+
+function SetFilesNeeded(needed) {
+    filesNeeded = needed;
+}
+
+function DownloadingFile(fileName) {
+    var short = String(fileName).split("/").pop();
+    setStatus("Téléchargement : " + short);
+}
+
+function SetStatusChanged(status) {
+    for (var i = 0; i < STAGES.length; i++) {
+        if (STAGES[i].match.test(status)) {
+            if (STAGES[i].value > stageProgress) stageProgress = STAGES[i].value;
+            setStatus(STAGES[i].text);
+            return;
+        }
+    }
+
+    setStatus(status);
+}
+
+// Aperçu dans un navigateur normal : ouvre index.html#demo pour simuler un chargement
+if (window.location.hash === "#demo") {
+    GameDetails("LeRoleplay | Fluide | Map Perso", "", "leroleplay_pinescity", 32);
+    var demo = ["Retrieving server info", "Sending client info", "Workshop Complete", "Mounting Addons", "Requesting resources", "Starting Lua", "Client info sent!", "Loading"];
+    var step = 0;
+    setInterval(function () {
+        if (step < demo.length) SetStatusChanged(demo[step++]);
+    }, 1500);
+}
+</script>
+</body>
+</html>
